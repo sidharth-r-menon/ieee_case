@@ -1,0 +1,39 @@
+<mujoco model="industrial_conveyor">
+  <compiler angle="degree" coordinate="local"/>
+  
+  <asset>
+    <material name="belt_mat" rgba="0.15 0.15 0.15 1" reflectance="0.05"/> 
+    <material name="frame_mat" rgba="0.12 0.45 0.65 1" reflectance="0.2"/>  
+    <material name="metal_mat" rgba="0.7 0.7 0.75 1" reflectance="0.5"/>  
+    <material name="motor_mat" rgba="0.2 0.2 0.2 1" reflectance="0.1"/>   
+    <material name="roller_mat" rgba="0.85 0.85 0.85 1" reflectance="0.4"/> 
+  </asset>
+
+  <worldbody>
+    <body name="custom_conveyor" pos="0 0 0">
+      
+      <geom name="g0" type="box" pos="0 0 0.8" size="1.0 0.3 0.01" material="belt_mat" mass="15" friction="1 0.005 0.0001"/>
+
+      <geom name="rail_left" type="box" pos="0 0.32 0.77" size="1.0 0.02 0.05" material="frame_mat" mass="10"/>
+      <geom name="rail_right" type="box" pos="0 -0.32 0.77" size="1.0 0.02 0.05" material="frame_mat" mass="10"/>
+
+      <geom name="roller_front" type="cylinder" pos="0.98 0 0.77" size="0.04 0.3" euler="90 0 0" material="roller_mat" mass="2"/>
+      <geom name="roller_back" type="cylinder" pos="-0.98 0 0.77" size="0.04 0.3" euler="90 0 0" material="roller_mat" mass="2"/>
+      
+      <geom name="roller_mid1" type="cylinder" pos="0.5 0 0.78" size="0.02 0.3" euler="90 0 0" material="metal_mat" mass="1"/>
+      <geom name="roller_mid2" type="cylinder" pos="0.0 0 0.78" size="0.02 0.3" euler="90 0 0" material="metal_mat" mass="1"/>
+      <geom name="roller_mid3" type="cylinder" pos="-0.5 0 0.78" size="0.02 0.3" euler="90 0 0" material="metal_mat" mass="1"/>
+
+      <geom name="leg_fl" type="box" pos="0.8 0.25 0.36" size="0.03 0.03 0.36" material="metal_mat" mass="5"/>
+      <geom name="leg_fr" type="box" pos="0.8 -0.25 0.36" size="0.03 0.03 0.36" material="metal_mat" mass="5"/>
+      <geom name="leg_bl" type="box" pos="-0.8 0.25 0.36" size="0.03 0.03 0.36" material="metal_mat" mass="5"/>
+      <geom name="leg_br" type="box" pos="-0.8 -0.25 0.36" size="0.03 0.03 0.36" material="metal_mat" mass="5"/>
+
+      <body name="drive_motor" pos="0.85 0.42 0.65">
+        <geom name="motor_box" type="box" size="0.1 0.08 0.08" material="motor_mat" mass="10"/>
+        <geom name="motor_shaft" type="cylinder" pos="-0.05 -0.05 0" size="0.03 0.05" euler="90 0 0" material="metal_mat"/>
+      </body>
+      
+    </body>
+  </worldbody>
+</mujoco>

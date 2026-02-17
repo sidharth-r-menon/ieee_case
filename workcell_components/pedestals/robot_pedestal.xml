@@ -1,0 +1,26 @@
+<mujoco model="industrial_robot_pedestal">
+  <compiler angle="degree" coordinate="local"/>
+
+  <asset>
+    <material name="cast_iron_mat" rgba="0.2 0.2 0.2 1" reflectance="0.1"/>
+    <material name="robot_orange_mat" rgba="0.85 0.35 0.05 1" reflectance="0.2"/>
+    <material name="machined_steel_mat" rgba="0.75 0.75 0.8 1" reflectance="0.5"/>
+  </asset>
+
+  <worldbody>
+    <body name="robot_pedestal" pos="0 0 0">
+
+      <geom name="base_plate" type="cylinder" pos="0 0 0.025" size="0.3 0.025" material="cast_iron_mat" mass="20"/>
+
+      <geom name="column" type="cylinder" pos="0 0 0.25" size="0.15 0.2" material="robot_orange_mat" mass="30"/>
+
+      <geom name="top_plate" type="cylinder" pos="0 0 0.475" size="0.25 0.025" material="machined_steel_mat" mass="15"/>
+
+      <geom name="rib_front" type="box" pos="0.18 0 0.1" size="0.05 0.015 0.075" material="cast_iron_mat"/>
+      <geom name="rib_back"  type="box" pos="-0.18 0 0.1" size="0.05 0.015 0.075" material="cast_iron_mat"/>
+      <geom name="rib_left"  type="box" pos="0 0.18 0.1" size="0.015 0.05 0.075" material="cast_iron_mat"/>
+      <geom name="rib_right" type="box" pos="0 -0.18 0.1" size="0.015 0.05 0.075" material="cast_iron_mat"/>
+
+    </body>
+  </worldbody>
+</mujoco>

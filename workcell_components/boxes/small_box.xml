@@ -1,0 +1,9 @@
+<mujoco model="small_box">
+  <compiler angle="degree"/>
+  
+  <worldbody>
+    <body name="box" pos="0 0 0">
+      <geom type="box" size="0.05 0.05 0.05" rgba="0.9 0.6 0.4 1" mass="0.1" friction="0.9"/>
+    </body>
+  </worldbody>
+</mujoco>

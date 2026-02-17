@@ -10,6 +10,7 @@ import asyncio
 import logging
 import uuid
 from pathlib import Path
+import json
 
 import streamlit as st
 
@@ -20,12 +21,14 @@ st.set_page_config(
     layout="wide",
 )
 
-# ── Logging ──────────────────────────────────────────────────────
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s  %(name)s  %(levelname)s  %(message)s",
-)
+# ── Enhanced Logging ──────────────────────────────────────────────
+from src.logging_config import setup_logging, log_workflow_step
+
+# Setup comprehensive logging
+LOG_FILE = setup_logging(level="DEBUG", enable_debug=True)
 logger = logging.getLogger(__name__)
+
+logger.info("Streamlit app started")
 
 
 # ── Helpers ──────────────────────────────────────────────────────
@@ -53,7 +56,7 @@ def _run_async(coro):
 @st.cache_resource(show_spinner="Loading agent …")
 def _load_agent():
     """Import and return (workcell_agent, AgentDependencies class)."""
-    from src_old.agent import workcell_agent
+    from src.agent import workcell_agent
     from src.dependencies import AgentDependencies
     return workcell_agent, AgentDependencies
 
@@ -175,6 +178,9 @@ def _render_chat():
         "Describe the robotic workcell you need in plain English. "
         "The agent will interpret, optimise, simulate, and validate the design."
     )
+    
+    # Show log file location
+    st.info(f"📝 Detailed logs are being saved to: `{LOG_FILE}`")
 
     # Replay chat history
     for msg in st.session_state.messages:
@@ -200,8 +206,13 @@ def _render_chat():
 
 def _run_agent(user_input: str) -> str:
     """Invoke the Pydantic-AI agent and return the response text."""
+    from src.logging_config import log_llm_interaction, log_workflow_step
+    
     agent, _ = _load_agent()
     deps = st.session_state.deps
+    
+    # Log this interaction
+    log_workflow_step(f"User input", user_input)
 
     # Build message history for multi-turn
     from pydantic_ai.messages import ModelRequest, ModelResponse, TextPart, UserPromptPart
@@ -217,6 +228,7 @@ def _run_agent(user_input: str) -> str:
             )
 
     try:
+        logger.debug(f"Calling agent with {len(message_history)} previous messages")
         result = _run_async(
             agent.run(
                 user_input,
@@ -224,7 +236,17 @@ def _run_agent(user_input: str) -> str:
                 message_history=message_history if message_history else None,
             )
         )
-        return result.output
+        
+        # Log the response
+        response_text = result.output
+        log_llm_interaction(user_input, response_text)
+        logger.info(f"Agent response length: {len(response_text)} chars")
+        
+        # Check if this looks like Stage 1 JSON
+        if "stage_1_complete" in response_text.lower() or "```json" in response_text:
+            logger.info("🎯 Detected possible Stage 1 JSON output in response")
+            
+        return response_text
     except Exception as exc:
         logger.exception("agent_run_error")
         return f"⚠️ Agent error: {exc}"

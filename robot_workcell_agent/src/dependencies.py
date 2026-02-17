@@ -25,6 +25,9 @@ class AgentDependencies:
     # Workcell design context
     current_stage: Optional[str] = None  # "1", "2", or "3"
     design_context: Dict[str, Any] = field(default_factory=dict)
+    stage1_result: Optional[Dict[str, Any]] = None  # Validated Stage 1 JSON
+    stage2_result: Optional[Dict[str, Any]] = None  # Stage 2 layout optimization results
+    stage3_result: Optional[Dict[str, Any]] = None  # Stage 3 simulation validation results
 
     # Configuration
     settings: Optional[Any] = None

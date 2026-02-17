@@ -67,11 +67,12 @@ temp/
 
 
 src_old/
-AGENT_IMPLEMENTATION_SUMMARY.md
-DEMO_EXECUTION_FLOW.md
 gemini_api_test.py
-genesis_world_pnp.py
+genesis_world_pnp*.py
 main_genesis.py
+layout_generator.py
+mjcf_visualizer.py
+robosuite_1_working.py
 /*.md
 !/README.md
 *.txt

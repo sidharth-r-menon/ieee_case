@@ -2,28 +2,26 @@
 """
 Request Interpreter - Convert natural language to structured scene JSON
 
-Usage:
-    python interpret_request.py --text "Set up a packing station with a Panda robot"
+This script reads JSON from stdin and outputs JSON to stdout.
+
+Expected input format:
+{
+    "text": "Set up a packing station with a Panda robot"
+}
+
+Output format:
+{
+    "partial_scene_data": {
+        "robot_configuration": {...},
+        "workcell_assets": [...],
+        ...
+    }
+}
 """
 
-import argparse
 import json
 import sys
 from pathlib import Path
-
-
-def parse_args():
-    """Parse command line arguments"""
-    parser = argparse.ArgumentParser(
-        description="Interpret natural language request and map to scene JSON structure"
-    )
-    parser.add_argument(
-        "--text",
-        type=str,
-        required=True,
-        help='Natural language description of the robot task'
-    )
-    return parser.parse_args()
 
 
 def interpret_request(text):
@@ -98,16 +96,32 @@ def interpret_request(text):
 
 
 def main():
-    """Execute request interpretation"""
-    args = parse_args()
-    
-    # Interpret the request
-    result = interpret_request(args.text)
-    
-    # Pretty print the result
-    print(json.dumps(result, indent=2))
-    
-    sys.exit(0)
+    """Execute request interpretation - reads JSON from stdin, outputs JSON to stdout"""
+    try:
+        # Read JSON input from stdin
+        input_data = json.load(sys.stdin)
+        
+        # Extract the text field
+        text = input_data.get("text", "")
+        
+        if not text:
+            print(json.dumps({"error": "Missing 'text' field in input"}), file=sys.stderr)
+            sys.exit(1)
+        
+        # Interpret the request
+        result = interpret_request(text)
+        
+        # Output JSON result to stdout
+        print(json.dumps(result, indent=2))
+        
+        sys.exit(0)
+        
+    except json.JSONDecodeError as e:
+        print(json.dumps({"error": f"Invalid JSON input: {e}"}), file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(json.dumps({"error": f"Unexpected error: {e}"}), file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

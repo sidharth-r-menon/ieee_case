@@ -1,0 +1,25 @@
+<mujoco model="industrial_workbench_black">
+  <compiler angle="degree" coordinate="local"/>
+  
+  <asset>
+    <material name="black_mat" rgba="0.1 0.1 0.1 1" reflectance="0.15"/>
+  </asset>
+
+  <worldbody>
+    <body name="workbench" pos="0 0 0">
+      
+      <geom name="table_top" type="box" pos="0 0 0.775" size="0.75 0.5 0.025" material="black_mat" mass="20" friction="1.5 0.005 0.0001"/>
+      
+      <geom name="apron_front" type="box" pos="0  0.45 0.725" size="0.65 0.02 0.025" material="black_mat" mass="2"/>
+      <geom name="apron_back"  type="box" pos="0 -0.45 0.725" size="0.65 0.02 0.025" material="black_mat" mass="2"/>
+      <geom name="apron_left"  type="box" pos=" 0.65 0 0.725" size="0.02 0.45 0.025" material="black_mat" mass="2"/>
+      <geom name="apron_right" type="box" pos="-0.65 0 0.725" size="0.02 0.45 0.025" material="black_mat" mass="2"/>
+
+      <geom name="leg_fl" type="box" pos=" 0.65  0.45 0.375" size="0.03 0.03 0.375" material="black_mat" mass="3"/>
+      <geom name="leg_fr" type="box" pos=" 0.65 -0.45 0.375" size="0.03 0.03 0.375" material="black_mat" mass="3"/>
+      <geom name="leg_bl" type="box" pos="-0.65  0.45 0.375" size="0.03 0.03 0.375" material="black_mat" mass="3"/>
+      <geom name="leg_br" type="box" pos="-0.65 -0.45 0.375" size="0.03 0.03 0.375" material="black_mat" mass="3"/>
+
+    </body>
+  </worldbody>
+</mujoco>

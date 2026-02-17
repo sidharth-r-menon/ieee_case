@@ -19,6 +19,9 @@ streamlit>=1.30.0
 numpy>=1.21.0
 pyswarms>=1.3.0
 
+# ZeroMQ for decoupled simulation
+pyzmq>=25.0.0
+
 # Genesis Physics Engine (install separately: pip install genesis-world)
 genesis-world>=0.1.0
 

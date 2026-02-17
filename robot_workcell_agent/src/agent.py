@@ -64,5 +64,12 @@ async def get_system_prompt(ctx: RunContext[AgentDependencies]) -> str:
     skill_metadata = ""
     if ctx.deps.skill_loader:
         skill_metadata = ctx.deps.skill_loader.get_skill_metadata_prompt()
+        # Escape curly braces in skill_metadata to prevent format() KeyError
+        skill_metadata = skill_metadata.replace('{', '{{').replace('}', '}}')
 
-    return MAIN_SYSTEM_PROMPT.format(skill_metadata=skill_metadata)
+    full_prompt = MAIN_SYSTEM_PROMPT.format(skill_metadata=skill_metadata)
+    
+    # Log the full system prompt for debugging
+    logger.debug(f"\n{'='*80}\n🔧 FULL SYSTEM PROMPT\n{'-'*80}\n{full_prompt[:2000]}...\n{'-'*80}\n(Truncated to first 2000 chars, full length: {len(full_prompt)} chars)\n{'='*80}")
+    
+    return full_prompt
