@@ -98,32 +98,6 @@ From remaining options, prefer:
 
 **Selection**: **UR5** - Exactly meets payload requirement, 850mm reach covers workspace, industry standard for palletizing, cost-effective
 
-### Example 2: Precision assembly 2kg components
-**Requirements**:
-- Payload: 2kg + 1kg = 3kg
-- Reach: 600mm
-- Task: Precision assembly
-
-**Analysis**:
-- ✅ Panda: 3kg payload, 855mm reach, 7-DOF, high precision
-- ✅ UR3: 3kg payload, 500mm reach (too short)
-- ✅ KUKA KR3: 3kg payload, 645mm reach, high precision
-
-**Selection**: **Panda** - 7-DOF provides flexibility for complex assembly, collaborative safety
-
-### Example 3: High-speed sorting 1kg items
-**Requirements**:
-- Payload: 1kg + 1kg = 2kg
-- Reach: 700mm
-- Task: High-speed pick-place
-
-**Analysis**:
-- ✅ KUKA KR3: 3kg payload, 645mm reach, high precision
-- ❌ UR3: 3kg payload, 500mm reach (too short)
-- ✅ UR5: 5kg payload, 850mm reach (oversized)
-
-**Selection**: **KUKA KR3** - Meets payload/reach requirements, high-speed industrial robot, cost-effective
-
 ## Detailed Specifications
 
 For complete specifications including joint ranges, speeds, and advanced features, refer to individual robot files:
@@ -148,7 +122,7 @@ When you've selected a robot, add it to Stage 1 JSON:
     "payload_kg": 5.0,
     "reach_m": 0.85,
     "justification": "UR5 selected for 5kg payload capacity matching the carton weight, 850mm reach covers conveyor to pallet distance, proven reliability for palletizing applications",
-    "urdf_path": "D:/GitHub/ieee_case/mujoco_menagerie/universal_robots_ur5e/ur5e.xml"
+    "urdf_path": "mujoco_menagerie/universal_robots_ur5e/ur5e.xml"
   }
 }
 ```

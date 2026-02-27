@@ -39,7 +39,15 @@ async def load_skill(
     if skill_name not in skill_loader.skills:
         available = list(skill_loader.skills.keys())
         logger.warning(f"load_skill_not_found: skill_name={skill_name}, available={available}")
-        return f"Error: Skill '{skill_name}' not found. Available skills: {available}"
+        return (
+            f"ERROR: Skill '{skill_name}' does not exist. "
+            f"EXACTLY {len(available)} skills exist: {available}. "
+            "There are NO domain-specific skills (e.g. no 'robotic_palletizer', 'assembly_solver', etc). "
+            "STOP trying to load non-existent skills. "
+            "If you are in Stage 1: use request_interpreter with its reference files to complete "
+            "requirements gathering, then call submit_stage1_json(data) to advance. "
+            "If Stage 1 is done: proceed directly with get_stage1_data() and run_skill_script_tool."
+        )
 
     skill = skill_loader.skills[skill_name]
     skill_md = skill.skill_path / "SKILL.md"
@@ -92,7 +100,11 @@ async def read_skill_file(
     if skill_name not in skill_loader.skills:
         available = list(skill_loader.skills.keys())
         logger.warning(f"read_skill_file_not_found: skill_name={skill_name}, available={available}")
-        return f"Error: Skill '{skill_name}' not found. Available skills: {available}"
+        return (
+            f"ERROR: Skill '{skill_name}' does not exist — cannot read files from it. "
+            f"EXACTLY {len(available)} skills exist: {available}. "
+            "Do not attempt to read files from non-existent skills."
+        )
 
     skill = skill_loader.skills[skill_name]
     target_file = skill.skill_path / file_path

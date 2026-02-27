@@ -29,7 +29,7 @@ def run_skill_script(
     skill_name: str,
     script_name: str,
     args: Optional[Dict[str, Any]] = None,
-    timeout: int = 120
+    timeout: int = 900
 ) -> Dict[str, Any]:
     """
     Execute a skill script with JSON input/output via stdin/stdout.
@@ -47,6 +47,12 @@ def run_skill_script(
     Returns:
         Dictionary parsed from script's JSON stdout
     """
+
+    # Script name mapping for genesis_scene_builder
+    if skill_name == "genesis_scene_builder" and script_name == "build_genesis_scene":
+        logger.warning("Redirecting build_genesis_scene to build_and_execute for genesis_scene_builder.")
+        script_name = "build_and_execute"
+
     script_path = SKILLS_DIR / skill_name / "scripts" / f"{script_name}.py"
 
     if not script_path.exists():
@@ -83,14 +89,19 @@ def _run_short_script(
     timeout: int
 ) -> Dict[str, Any]:
     """Run a script that terminates after producing output."""
+    import os
+    child_env = os.environ.copy()
+    child_env["PYTHONIOENCODING"] = "utf-8"
     try:
         process = subprocess.run(
             [sys.executable, str(script_path)],
             input=input_json,
             capture_output=True,
             text=True,
+            encoding="utf-8",
             timeout=timeout,
-            check=True
+            check=True,
+            env=child_env
         )
 
         result = json.loads(process.stdout)
@@ -176,14 +187,21 @@ def _run_long_running_script(
             creation_flags = subprocess.CREATE_NEW_CONSOLE
             logger.info(f"🪟 Launching Genesis in a NEW TERMINAL WINDOW")
         
+        import os
+        # Set UTF-8 encoding for the subprocess to handle Genesis Unicode box-drawing chars
+        child_env = os.environ.copy()
+        child_env["PYTHONIOENCODING"] = "utf-8"
+        
         process = subprocess.Popen(
             [sys.executable, "-u", str(script_path)],  # -u for unbuffered
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            encoding="utf-8",
             bufsize=0,  # Unbuffered
-            creationflags=creation_flags  # Separate window on Windows
+            creationflags=creation_flags,  # Separate window on Windows
+            env=child_env
         )
         logger.info(f"📝 Process started (PID: {process.pid}), sending input...")
         
@@ -194,7 +212,15 @@ def _run_long_running_script(
             try:
                 for line in process.stderr:
                     if line.strip():
-                        logger.error(f"🔴 genesis_stderr: {line.strip()}")
+                        # Downgrade all '[genesis]' and normal print lines to INFO unless they contain error/fail/exception
+                        lower_line = line.lower()
+                        if '[genesis]' in line or not line.startswith('Traceback'):
+                            if ('error' in lower_line or 'fail' in lower_line or 'exception' in lower_line):
+                                logger.error(f"🔴 genesis_stderr: {line.strip()}")
+                            else:
+                                logger.info(f"🔵 genesis_log: {line.strip()}")
+                        else:
+                            logger.error(f"🔴 genesis_stderr: {line.strip()}")
                         stderr_lines.append(line)
             except Exception as e:
                 logger.error(f"Error in stderr thread: {e}")

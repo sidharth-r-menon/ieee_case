@@ -46,20 +46,8 @@ Check against the required Stage 1 output schema:
 
 ## Question Formulation
 
-### Good Questions:
-- "What are the carton dimensions? (length × width × height in cm)"
-- "What is the weight of each carton in kg?"
-- "How many cartons per hour should the system handle?"
-
-### Avoid:
-- Vague: "Tell me more about the cartons"
-- Multiple questions in one
-- Repeating already-answered questions
+Ask specific, quantitative questions ("What are the carton dims in cm? What weight in kg?"). Avoid vague or repeated questions. Ask 3-5 per round.
 
 ## Iteration Strategy
 
-1. Ask 3-5 focused questions at a time
-2. After user responds, update your understanding
-3. Check schema again for remaining gaps
-4. If gaps remain, ask refined questions
-5. If all critical fields complete → Output Stage 1 JSON
+After each user response: update understanding → re-check schema → ask remaining gaps. Stop iterating when all critical fields are complete.

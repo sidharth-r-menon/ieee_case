@@ -7,7 +7,7 @@ import logging
 from pydantic_ai.models import Model
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openai import OpenAIProvider
-from openai import AsyncAzureOpenAI
+from src.llm_client import get_llm_client
 from src.settings import load_settings
 
 logger = logging.getLogger(__name__)
@@ -15,40 +15,25 @@ logger = logging.getLogger(__name__)
 
 def get_llm_model() -> Model:
     """
-    Build Azure OpenAI model for the agent.
-    
+    Build LLM model for the agent, supporting Azure OpenAI and Qwen/local.
     Returns:
-        OpenAIModel configured for Azure with credentials from .env
-        
+        OpenAIModel configured for the selected provider
     Raises:
-        ValueError: If Azure credentials are missing
+        ValueError: If credentials are missing
     """
     settings = load_settings()
-    
-    if not settings.azure_api_key:
-        raise ValueError(
-            "AZURE_OPENAI_API_KEY is required. "
-            "Set it in .env file or environment variables."
-        )
-    
-    if not settings.azure_endpoint:
-        raise ValueError(
-            "AZURE_OPENAI_ENDPOINT is required. "
-            "Set it in .env file (e.g., https://your-resource.openai.azure.com/)"
-        )
-
-    azure_client = AsyncAzureOpenAI(
-        api_key=settings.azure_api_key,
-        api_version=settings.azure_api_version,
-        azure_endpoint=settings.azure_endpoint,
-    )
-    
-    prov = OpenAIProvider(openai_client=azure_client)
-    model = OpenAIModel(settings.azure_deployment_name, provider=prov)
-    
-    logger.info(
-        f"azure_openai_initialized: deployment={settings.azure_deployment_name}, "
-        f"endpoint={settings.azure_endpoint}"
-    )
-    
+    llm_client = get_llm_client()
+    provider = settings.model_provider.lower()
+    if provider == "azure":
+        deployment = settings.azure_deployment_name
+        prov = OpenAIProvider(openai_client=llm_client)
+        model = OpenAIModel(deployment, provider=prov)
+    elif provider == "qwen":
+        deployment = settings.qwen_base_model
+        prov = OpenAIProvider(openai_client=llm_client)
+        # WARNING: Hyperparameters must be passed at call time, not model construction
+        model = OpenAIModel(deployment, provider=prov)
+    else:
+        raise ValueError(f"Unknown provider: {provider}")
+    logger.info(f"llm_initialized: provider={provider}, deployment={deployment}")
     return model

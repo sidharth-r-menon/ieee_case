@@ -127,7 +127,12 @@ def main():
     """Execute layout calculation - reads Stage 1 from stdin, outputs Stage 2 to stdout"""
     try:
         stage1 = json.load(sys.stdin)
-        
+
+        # Handle both direct Stage1 format and wrapped {"stage1_data": {...}} format
+        # (agent may wrap args under "stage1_data" key)
+        if "stage1_data" in stage1 and "robot_selection" not in stage1:
+            stage1 = stage1["stage1_data"]
+
         # Validate inputs
         if 'robot_selection' not in stage1 or 'workcell_components' not in stage1:
             print(json.dumps({"error": "Missing required fields"}), file=sys.stderr)
@@ -141,12 +146,12 @@ def main():
         pedestal = get_component(comps, ['pedestal', 'base', 'mount'])
         conveyor = get_component(comps, ['conveyor', 'belt'])
         pallet = get_component(comps, ['pallet', 'station'])
+        carton = get_component(comps, ['box', 'carton', 'object'])
         
         # Get box dimensions from task_specification or components
-        box_dims = task.get('dimensions', [0.30, 0.30, 0.30])
+        box_dims = task.get('dimensions', [0.20, 0.20, 0.20])
         if not box_dims or len(box_dims) != 3:
-            box_comp = get_component(comps, ['box', 'carton', 'object'])
-            box_dims = box_comp.get('dimensions', [0.30, 0.30, 0.30]) if box_comp else [0.30, 0.30, 0.30]
+            box_dims = carton.get('dimensions', [0.20, 0.20, 0.20]) if carton else [0.20, 0.20, 0.20]
         
         # Construct input JSON (EXACT format from layout_generator.py)
         layout_input = {
@@ -219,6 +224,20 @@ def main():
                 "dimensions": pallet['dimensions'],
                 "mjcf_path": pallet.get('mjcf_path', '')
             })
+        
+        # Add carton at its spawn position (on top of conveyor)
+        # ALWAYS use component_type='carton' and the canonical mjcf path — never trust the LLM's type/path.
+        carton_name = carton['name'] if carton else 'cardboard_box'
+        CARTON_TYPE = 'carton'   # hardcoded — downstream code matches on this exact string
+        CARTON_MJCF = 'D:/GitHub/ieee_case/workcell_components/boxes/cardboard_box.xml'  # canonical path
+        optimized_components.append({
+            "name": carton_name,
+            "component_type": CARTON_TYPE,
+            "position": layout_coords['box_spawn_pos'],
+            "orientation": [0, 0, 0],
+            "dimensions": box_dims,
+            "mjcf_path": CARTON_MJCF
+        })
         
         # Output result
         result = {

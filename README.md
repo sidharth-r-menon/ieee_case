@@ -1,365 +1,315 @@
 # Robot Workcell Design Agent
 
-An AI-powered agent for automated robotic workcell design using the Anthropic skills pattern with progressive disclosure and executable skill scripts.
+An AI-powered agent for automated robotic workcell design using the Anthropic skills pattern with **progressive disclosure** and executable skill scripts. Includes a multi-pipeline evaluation framework for benchmarking agent design strategies.
 
-## 🎯 Overview
+---
 
-This agent enables end-to-end robotic workcell design from natural language:
-
-```
-Natural Language → Interpret Requirements → Optimize Layout Placement → Build & Execute Simulation
-```
-
-### Key Features
-
-- **🤖 Streamlit Chat UI** - Interactive chat interface with real-time pipeline status
-- **⚡ Anthropic Skills Pattern** - Agent loads skills and executes their Python scripts
-- **📚 Progressive Disclosure** - Skills load on-demand to conserve context
-- **🎨 3-Stage Pipeline** - Request Interpretation → Layout Optimization → Genesis Simulation
-- **📦 4 Core Skills** - Streamlined architecture with executable Python scripts
-- **🦾 Multi-Robot Support** - 25+ robot models from mujoco_menagerie (UR series, Franka, Kinova, KUKA, etc.)
-- **📊 Physics Simulation** - Genesis GPU-accelerated simulation with automatic trajectory execution
-- **🧠 Deterministic Layout** - layout_generator.py with collision detection and reachability analysis
-- **☁️ Azure OpenAI** - Powered by GPT-4o
-
-## 🏗️ Architecture
-
-### Anthropic Skills Pattern
-
-This project follows the **Anthropic skills pattern** where:
-
-1. **Agent loads skill instructions** using `load_skill_tool(skill_name)`
-2. **Skill SKILL.md contains workflow instructions** telling agent how to execute
-3. **Agent runs Python scripts** in the skill's `scripts/` folder via terminal
-4. **Scripts output JSON** which agent parses and uses to continue
-
-**No hardcoded execution tools** - the agent dynamically discovers and executes skill scripts based on loaded instructions.
-
-### Skill Tools (Progressive Disclosure)
-
-Three levels of access:
-- **Level 1**: Skill metadata in system prompt (name, description, stage)
-- **Level 2**: Load full instructions via `load_skill_tool(skill_name)` → reads SKILL.md
-- **Level 3**: Access specific files via `read_skill_file_tool(skill_name, file_path)`
-
-Available tools:
-- `load_skill_tool(skill_name)` - Load full SKILL.md workflow instructions
-- `read_skill_file_tool(skill_name, file_path)` - Read specific resource files
-- `list_skill_files_tool(skill_name)` - List available files in skill directory
-
-### Project Structure
+## Project Structure
 
 ```
 robot_workcell_agent/
-├── streamlit_app.py          # 🎨 Streamlit chat UI (RECOMMENDED)
-├── .env                       # 🔑 Azure OpenAI credentials
-├── requirements.txt           # 📦 Dependencies
+├── streamlit_app.py          # Streamlit chat UI
+├── pyproject.toml            # Project metadata & dependencies
+├── .env                      # API credentials (git-ignored)
 ├── src/
-│   ├── agent.py              # Main Pydantic AI agent (uses skill_tools only)
+│   ├── agent.py              # Pydantic AI agent (skill tools only)
 │   ├── skill_toolset.py      # Progressive disclosure + execution tools
 │   ├── skill_loader.py       # Skill discovery from filesystem
-│   ├── skill_tools.py        # Skill loading implementation
-│   ├── providers.py          # Azure OpenAI configuration
-│   ├── settings.py           # Environment-based settings
+│   ├── skill_tools.py        # load / read / list skill implementations
+│   ├── providers.py          # Azure OpenAI / Qwen LLM configuration
+│   ├── settings.py           # Environment-based settings (dataclass)
+│   ├── schemas.py            # Pydantic schemas: Stage1Output, etc.
 │   ├── prompts.py            # System prompt with 3-stage workflow
+│   ├── runtime.py            # Agent runtime orchestration
 │   └── dependencies.py       # Dependency injection
-├── skills/                   # 3 active skills (streamlined pipeline)
-│   ├── request_interpreter/  # Stage 1 - NL → JSON with reference guides
-│   │   ├── SKILL.md         # Workflow instructions
-│   │   ├── scripts/
-│   │   │   └── interpret_request.py
-│   │   └── references/      # Consolidated Stage 1 guidance
-│   │       ├── gap_analysis_guide.md    # What info is required
-│   │       ├── standard_objects.md      # Common object dimensions
-│   │       ├── robot_selection_guide.md # Robot selection logic
-│   │       └── robots/                   # Robot specifications
-│   │           ├── franka_emika_panda.md
-│   │           ├── kuka_kr3.md
-│   │           ├── ur10.md
-│   │           ├── ur3.md
-│   │           └── ur5.md
-│   ├── placement_solver/     # Stage 2 - Deterministic layout optimization
+├── skills/
+│   ├── request_interpreter/  # Stage 1 – NL → structured JSON
 │   │   ├── SKILL.md
-│   │   ├── scripts/
-│   │   │   └── solve_placement.py  # Uses layout_generator.py
+│   │   ├── scripts/interpret_request.py
 │   │   └── references/
-│   │       ├── ik_guidelines.md
-│   │       └── pso_configuration.md
-│   └── genesis_scene_builder/# Stage 3 - Build scene + execute trajectory
+│   │       ├── gap_analysis_guide.md
+│   │       ├── standard_objects.md
+│   │       ├── robot_selection_guide.md
+│   │       └── robots/{ur5,ur3,ur10,franka_emika_panda,kuka_kr3}.md
+│   ├── placement_solver/     # Stage 2 – Deterministic layout optimization
+│   │   ├── SKILL.md
+│   │   └── scripts/solve_placement.py
+│   ├── genesis_scene_builder/# Stage 3 – Physics scene + 6-phase trajectory
+│   │   ├── SKILL.md
+│   │   └── scripts/build_and_execute.py
+│   └── simulation_validator/ # DEPRECATED – trajectory integrated into build_and_execute
 │       ├── SKILL.md
-│       ├── scripts/
-│       │   └── build_and_execute.py  # Combined build + 6-phase trajectory
-│       └── references/
-│           ├── asset_organization.md
-│           └── genesis_api_reference.md
-└── tests/                    # Unit and integration tests
+│       └── scripts/execute_and_validate.py
+├── comparisons/              # 4-pipeline evaluation framework
+│   ├── evaluation/
+│   │   ├── harness.py        # CLI entry point + report generator
+│   │   └── ours_pipeline.py  # "Ours (Full)" pipeline wrapper
+│   ├── naive_llm/            # Baseline: single zero-shot LLM call
+│   ├── langchain_tools/      # LangChain: tool calling + RAG
+│   ├── skills_no_disclosure/ # Skills loaded upfront, no progressive disclosure
+│   └── shared/
+│       ├── validators.py     # Stage 1/2/3 semantic validators
+│       ├── stage_scripts.py  # Subprocess wrappers for skill scripts
+│       ├── evidence_logger.py# Structured per-iteration logging
+│       ├── test_prompts.py   # 100 standardized palletizing prompts
+│       └── config.py         # Paths, timeouts, logging config
+└── tests/
 ```
 
-### External Asset Directories
-
+**External asset directories** (at repository root):
 ```
-mujoco_menagerie/             # Robot URDFs and MuJoCo models
-├── franka_emika_panda/      # Franka Panda robot (7-DOF, 3kg payload, 855mm reach)
-├── franka_fr3/              # Franka FR3
-├── universal_robots_ur5e/   # UR5e (5kg payload, 850mm reach)
-├── universal_robots_ur10e/  # UR10e (10kg payload, 1300mm reach)
-├── kuka_iiwa_14/            # KUKA iiwa 14 (14kg payload)
-├── kinova_gen3/             # Kinova Gen3
-├── unitree_z1/              # Unitree Z1
-└── ... (25+ robot models)   # See mujoco_menagerie/ for full list
-
-workcell_components/          # Workcell structural components (MJCF format)
-├── carton/                  # Carton boxes (various sizes)
-│   └── carton.xml
-├── conveyor/                # Belt conveyors
-│   └── conveyor.xml
-├── pallet/                  # Standard pallets
-│   └── pallet.xml
-├── pedestal/                # Robot pedestals
-│   └── pedestal.xml
-├── table/                   # Work tables
-│   └── table.xml
-└── ... (more components)    # Bins, shelves, racks, etc.
+mujoco_menagerie/             # 60+ robot MJCF/URDF models (Google DeepMind)
+workcell_components/
+├── boxes/                    # cardboard_box.xml, medium_box.xml, small_box.xml
+├── conveyors/                # conveyor_belt.xml
+├── pallets/                  # euro_pallet.xml
+├── pedestals/                # robot_pedestal.xml
+├── tables/                   # workbench.xml
+└── robots/universal_robots_ur5e/  # ur5e_with_suction.xml + mesh assets
 ```
 
-**Key Notes**:
-- **mujoco_menagerie/**: Contains robot URDF files from Google DeepMind's MuJoCo Menagerie project. Each robot folder has a `scene.xml` that references the URDF.
-- **workcell_components/**: Custom-built MJCF component files for workcell infrastructure. These are referenced by genesis_scene_builder when building the simulation.
-- Both directories are accessed during Stage 3 (genesis_scene_builder) to construct the complete scene.
+---
 
-### Skill Structure
+## Quick Start
 
-Each skill follows the Anthropic pattern:
-```
-skills/skill_name/
-├── SKILL.md              # Workflow instructions with YAML frontmatter
-│                         # Contains: when to use, how to execute scripts,
-│                         # how to parse output, what to do next
-└── scripts/              # Executable Python scripts
-    └── *.py              # Script reads JSON from stdin, outputs JSON to stdout
-```
+### Prerequisites
+- Python 3.11+, GPU recommended for Stage 3 Genesis simulation
+- Azure OpenAI (GPT-4o) **or** a locally-served Qwen3-14B endpoint
 
-**Example workflow:**
-1. Agent loads `request_interpreter` skill: `load_skill_tool("request_interpreter")`
-2. SKILL.md says: "Run `python scripts/interpret_request.py` and send input as JSON via stdin"
-3. Agent executes script, sending JSON input via stdin
-4. Script outputs JSON to stdout (never prints logs)
-5. Agent parses JSON and continues to next skill
-
-## 🚀 Quick Start
-
-### 1. Prerequisites
-
-- Python 3.11+
-- Conda environment
-- Azure OpenAI access with GPT-4o deployment
-
-### 2. Configure Azure OpenAI
-
-Edit `.env` and add your credentials:
+### Configure credentials
 
 ```bash
-AZURE_OPENAI_API_KEY=your_api_key_here
+# robot_workcell_agent/.env
+MODEL_PROVIDER=azure
+AZURE_OPENAI_API_KEY=your_key
 AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
 AZURE_OPENAI_API_VERSION=2024-12-01-preview
 AZURE_OPENAI_DEPLOYMENT=gpt-4o
+
+# Optional – local Qwen LoRA endpoint
+# MODEL_PROVIDER=qwen
+# QWEN_BASE_MODEL=Qwen/Qwen3-14B
+# QWEN_API_BASE_URL=http://localhost:8000/v1
+# QWEN_API_KEY=sk-no-key-required
+# QWEN_TEMPERATURE=0.6
+# QWEN_TOP_P=0.95
+# QWEN_MAX_TOKENS=8192
 ```
 
-### 3. Install Dependencies
+### Install & run
 
 ```bash
-cd d:\GitHub\ieee_case\robot_workcell_agent
+cd robot_workcell_agent
 pip install -r requirements.txt
+
+# Streamlit chat UI
+streamlit run streamlit_app.py   # → http://localhost:8501
 ```
 
-### 4. Run the Agent
+---
 
-**Option A: Streamlit Chat UI (Recommended)**
+## 3-Stage Pipeline
+
+### Stage 1 – Request Interpretation
+
+Agent loads `request_interpreter` skill (progressive disclosure), reads reference guides, then executes:
+
 ```bash
-streamlit run streamlit_app.py
+python skills/request_interpreter/scripts/interpret_request.py   # stdin: prompt JSON
 ```
 
-Open your browser to `http://localhost:8501` and start chatting!
+Reference guides loaded on-demand:
+- `gap_analysis_guide.md` – identifies missing required info  
+- `robot_selection_guide.md` + `robots/*.md` – robot selection based on payload / reach  
+- `standard_objects.md` – dimension inference for common objects  
 
+**Stage 1 JSON output** (stored via `submit_stage1_json` tool):
+```jsonc
+{
+  "robot_selection": { "model": "ur5e", "payload_kg": 5.0, "reach_mm": 850 },
+  "workcell_components": [
+    { "component_type": "pedestal", "name": "robot_pedestal", "dimensions": [0.6,0.6,0.5] },
+    { "component_type": "conveyor", "name": "belt_conveyor",  "dimensions": [2.0,0.64,0.82] },
+    { "component_type": "pallet",   "name": "euro_pallet",    "dimensions": [1.2,0.8,0.15] },
+    { "component_type": "carton",   "name": "cardboard_carton","dimensions": [0.3,0.3,0.3] }
+  ],
+  "throughput_requirement": { "items_per_hour": 120, "cycle_time_seconds": 30 },
+  "spatial_reasoning": { "zones": [...] }
+}
+```
 
-## 💬 Usage Examples
+### Stage 2 – Layout Optimization
 
-### Example 1: Simple Palletizing Cell
+Deterministic solver via `layout_generator.py`:
 
-**You**: *"I need a workcell with a UR5 robot to palletize cartons from a conveyor onto a pallet"*
+```bash
+python skills/placement_solver/scripts/solve_placement.py   # stdin: Stage 1 JSON
+```
 
-**Agent Workflow** (3-Stage Pipeline):
+- Robot pedestal always at origin [0, 0, 0]  
+- Components distributed in reachable zones (front-left, front-right, side)  
+- Collision detection + IK reachability validation  
+- Output: 3D XYZ positions for every component
 
-**Stage 1 - Request Interpretation**:
-1. Loads `request_interpreter` skill via `load_skill_tool("request_interpreter")`
-2. Loads reference guides: `gap_analysis_guide.md`, `standard_objects.md`, `robot_selection_guide.md`
-3. Executes: `run_skill_script_tool("request_interpreter", "interpret_request", {...})`
-4. Asks clarifying questions about missing critical info (e.g., carton dimensions, pallet size)
-5. Outputs structured JSON with robot (UR5), components (conveyor, carton, pallet, pedestal)
-6. Calls `submit_stage1_json(validated_dict)` to store Stage 1 result
-7. **Asks: "Proceed to Stage 2 (layout optimization)?"** → **Waits for confirmation**
+### Stage 3 – Genesis Simulation
 
-**Stage 2 - Layout Optimization**:
-1. Loads `placement_solver` skill
-2. Retrieves Stage 1 data via `get_stage1_data()` 
-3. Executes: `run_skill_script_tool("placement_solver", "solve_placement", stage1_data)`
-4. layout_generator.py calculates deterministic layout:
-   - Robot pedestal at origin [0, 0, 0]
-   - Conveyor in robot's front-left reachable zone
-   - Pallet in robot's front-right reachable zone  
-   - Component placement based on robot reach envelope
-5. Outputs optimized positions for all components
-6. **Asks: "Does this layout look correct? Proceed to Stage 3 (simulation)?"** → **Waits for confirmation**
+```bash
+python skills/genesis_scene_builder/scripts/build_and_execute.py   # stdin: merged JSON
+```
 
-**Stage 3 - Genesis Simulation**:
-1. Loads `genesis_scene_builder` skill
-2. Calls `prepare_genesis_input()` to merge Stage 1 + Stage 2 data (**auto-adds trajectory parameters**)
-3. Calls `fix_genesis_paths()` to resolve absolute file paths for robot URDFs and component MJCFs
-4. Executes: `run_skill_script_tool("genesis_scene_builder", "build_and_execute", fixed_data)`
-5. build_and_execute.py:
-   - Spawns robot from mujoco_menagerie/ (e.g., `universal_robots_ur5e/scene.xml`)
-   - Spawns components from workcell_components/ (e.g., `conveyor/conveyor.xml`, `pallet/pallet.xml`)
-   - Executes **6-phase trajectory**:
-     1. **Approach**: Move to above carton on conveyor
-     2. **Grasp**: Lower to carton, close gripper
-     3. **Lift**: Raise carton to safe height (z_lift=0.4m)
-     4. **Transfer**: Move to above pallet
-     5. **Place**: Lower to pallet placement position
-     6. **Retreat**: Open gripper, return to home position
-6. Simulation runs in Genesis (gs.gpu backend) with automatic trajectory execution
-7. Returns complete design with component coordinates
+Pre-processing before script launch:
+- `prepare_genesis_input()` – merges Stage 1 + Stage 2, auto-adds `execute_trajectory=True`, `z_lift=0.4`, motion targets  
+- `fix_genesis_paths()` – resolves keyword-based component names to absolute MJCF paths on disk  
 
-**Total Time**: ~30-60 seconds end-to-end
+**6-phase trajectory** inside Genesis (`gs.gpu` backend):
 
-### Example 2: Multi-Component Assembly Cell
+| Phase | Action |
+|-------|--------|
+| 1 Approach | Move above source object |
+| 2 Grasp | Lower + close gripper |
+| 3 Lift | Raise to safe height (z_lift = 0.4 m) |
+| 4 Transfer | Move above target location |
+| 5 Place | Lower to placement position |
+| 6 Retreat | Open gripper, return home |
 
-**You**: *"Design a workcell with a Franka Panda to assemble products, picking parts from a table and placing them in a bin"*
+---
 
-**Agent Workflow**:
+## Evaluation Framework (`comparisons/`)
 
-**Stage 1**: Interprets request → identifies robot (Franka Panda), components (table, bin, parts) → asks for part details (dimensions, quantities) → outputs Stage 1 JSON → waits for confirmation
+Benchmarks four pipeline variants on **100 standardised prompts** across 3 complexity tiers.
 
-**Stage 2**: Optimizes layout → robot pedestal at origin, table in reachable zone, bin nearby → validates collision-free placement → waits for confirmation
+### Test Prompts
 
-**Stage 3**: Builds scene in Genesis → loads Franka Panda from `mujoco_menagerie/franka_emika_panda/` → loads table and bin from `workcell_components/` → executes pick-and-place trajectory → returns design
+All prompts are pick-and-place palletizing variants:
 
-## 📊 Pipeline Stages
+| Tier | IDs | Description |
+|------|-----|-------------|
+| Low | P01–P25 | All specs explicit (robot, dims, throughput) |
+| Medium | P26–P65 | Partial specs; values must be inferred |
+| High | P66–P100 | Vague, conflicting, or multi-constraint inputs |
 
-### Stage 1: Request Interpretation
+### Four Pipeline Variants
 
-| Skill | Python Script | Purpose |
-|-------|--------------------------|---------|
-| **request_interpreter** | `scripts/interpret_request.py` | Parse natural language → structured JSON with robot selection, component identification, and gap analysis |
+| Pipeline | Tools | Skills | Progressive Disclosure | State Machine |
+|----------|-------|--------|----------------------|---------------|
+| `naive_llm` | ✗ | ✗ | ✗ | ✗ |
+| `langchain_tools` | ✓ | ✗ | ✗ | ✗ |
+| `skills_no_disclosure` | ✓ | ✓ | ✗ | ✗ |
+| `ours_full` | ✓ | ✓ | ✓ | ✓ |
 
-**Reference Guides** (loaded automatically):
-- `gap_analysis_guide.md` - Identifies missing critical/important/optional information
-- `standard_objects.md` - Common object dimensions (cartons, pallets, tables, etc.)
-- `robot_selection_guide.md` - Robot selection logic based on payload, reach, task type
-- `robots/*.md` - Detailed specifications for 5 robot models (Franka Panda, UR3/5/10, KUKA KR3)
+### Stage Validators (`shared/validators.py`)
 
-**Output**: Stage 1 JSON containing:
-- Robot specification (model, payload, reach)
-- Workcell components (type, name, dimensions, material)
-- Task description
-- Validation status
+All four pipelines are evaluated against identical semantic checks.
 
-### Stage 2: Layout Optimization
+#### Stage 1 – 6 checks (all must pass)
 
-| Skill | Python Script | Purpose |
-|-------|---------------|---------|
-| **placement_solver** | `scripts/solve_placement.py` | Deterministic layout calculation via layout_generator.py: robot pedestal at origin, components in reachable zones with collision avoidance |
+| # | Check | Rule |
+|---|-------|------|
+| 1 | Pydantic schema | `Stage1Output.model_validate()` succeeds |
+| 2 | Throughput consistency | `cycle_time_seconds` within ±10% of `3600 / items_per_hour` |
+| 3 | Payload adequacy | `robot_selection.payload_kg ≥ task_specification.weight_kg` |
+| 4 | Required components | All four types present: pedestal + conveyor + pallet + carton/object |
+| 5 | MJCF path namespace | Every path starts with `workcell_components/` or a known robot directory |
+| 6 | Spatial zone completeness | `spatial_reasoning.zones` has ≥ 2 entries with ≥ 1 pickup zone and ≥ 1 placement zone |
 
-**Algorithm**: layout_generator.py (deterministic, not PSO)
-- **Robot Base**: Always at origin [0, 0, 0]
-- **Component Placement**: Distributed in zones around robot (front-left, front-right, side)
-- **Constraints**: Collision detection, reachability analysis, IK validation
-- **Output**: Optimized 3D coordinates for all components
+#### Stage 2 – 4 checks
 
-### Stage 3: Genesis Simulation
+| # | Check | Rule |
+|---|-------|------|
+| 1 | Status success | Solver returns `status: success` |
+| 2 | Position validity | Every component has a valid `[x, y, z]` list |
+| 3 | Both motion targets present | `motion_targets` includes both `pick_target_xyz` and `place_target_xyz` |
+| 4 | Layout spread | Pick–place distance ≥ 0.8 m; pick z ≥ 0.3 m |
 
-| Skill | Python Script | Purpose |
-|-------|--------------------------|---------|
-| **genesis_scene_builder** | `scripts/build_and_execute.py` | Spawn robot + components in Genesis AND execute 6-phase trajectory (approach → grasp → lift → transfer → place → retreat) |
+#### Stage 3 – 4 checks (raw agent JSON, evaluated before path-fixing)
 
-**Execution Flow**:
-1. **prepare_genesis_input()**: Merges Stage 1 + Stage 2 data, **auto-adds trajectory parameters** (execute_trajectory=True, motion_targets, z_lift=0.4)
-2. **fix_genesis_paths()**: Resolves absolute file paths for robot URDFs (from mujoco_menagerie/) and component MJCFs (from workcell_components/)
-3. **build_and_execute.py**: 
-   - Spawns robot entity (e.g., `mujoco_menagerie/universal_robots_ur5e/scene.xml`)
-   - Spawns component entities (e.g., `workcell_components/pallet/pallet.xml`)
-   - Executes trajectory using Genesis IK solver
-   - Returns completion status
+| # | Check | Rule |
+|---|-------|------|
+| 1 | Component count | At least 3 components in scene list |
+| 2 | Robot present | One component with `component_type == "robot"` |
+| 3 | Robot URDF exists | Robot's `urdf_path` resolves to an existing file under `mujoco_menagerie/` |
+| 4 | Trajectory parameters | `execute_trajectory=True` and both pick/place targets populated |
 
-**Trajectory Phases**:
-1. **Approach**: Move end-effector above source object
-2. **Grasp**: Lower to object, close gripper
-3. **Lift**: Raise to safe height (z_lift=0.4m by default)
-4. **Transfer**: Move to above target location  
-5. **Place**: Lower to target position
-6. **Retreat**: Open gripper, return to home position
+### Tool Hit / Miss Tracking
 
-**Simulation Backend**: Genesis (gs.gpu) - GPU-accelerated physics with automatic IK solving
+`EvidenceLogger` records every tool/skill call per iteration:
 
-## 🎨 Streamlit UI Features
+- **Hit** – correct tool called at the correct stage with valid arguments  
+- **Miss** – wrong tool, skipped stage, or invalid arguments  
 
-The Streamlit app (`streamlit_app.py`) provides:
+Hit/miss rates appear in **Table 2** of the comparison report.
 
-- **Chat Interface** - Natural language interaction with the agent
-- **Pipeline Status Sidebar** - Live tracking of Stage 1/2/3 progress
-- **Skill Browser** - View all 3 active skills with descriptions
-- **Design Context** - Inspect scene data, layout, validation results in real-time
-- **Multi-Turn Conversations** - Maintains conversation history
-- **Session Management** - Reset session to start fresh
+### Running the Evaluation
 
+```bash
+cd robot_workcell_agent
 
-## 🗄️ Data Resources
+# Quick smoke-test
+python -m comparisons.evaluation.harness --pipelines langchain_tools --prompts 3
 
-### Robot Database (mujoco_menagerie)
+# Full run – all 4 pipelines, 100 prompts
+python -m comparisons.evaluation.harness --pipelines all --prompts 100
 
-The `mujoco_menagerie/` directory contains 60+ robot models from Google DeepMind's MuJoCo Menagerie project. Common manipulation robots for workcells include:
+# Filter by complexity tier
+python -m comparisons.evaluation.harness --complexity low --prompts 25
 
-**Industrial Collaborative Robots**:
-- **franka_emika_panda** - 7-DOF, 3kg payload, 855mm reach - Precision manipulation, research, assembly
-- **franka_fr3** - 7-DOF, 3kg payload, 855mm reach - Latest Franka model
-- **universal_robots_ur5e** - 6-DOF, 5kg payload, 850mm reach - General purpose, versatile
-- **universal_robots_ur10e** - 6-DOF, 10kg payload, 1300mm reach - Heavy payload, palletizing
-- **kuka_iiwa_14** - 7-DOF, 14kg payload, 820mm reach - High precision, assembly
-- **kinova_gen3** - 7-DOF, 2kg payload, 902mm reach - Research, assistive robotics
-- **rethink_robotics_sawyer** - 7-DOF, 4kg payload, 1260mm reach - Collaborative tasks
-- **ufactory_xarm7** - 7-DOF, 3.5kg payload, 700mm reach - Compact workcells
-- **unitree_z1** - 6-DOF, 3kg payload, 750mm reach - Lightweight manipulation
+# Batch mode to avoid rate limits
+python -m comparisons.evaluation.harness --prompts 20 --offset 0
+python -m comparisons.evaluation.harness --prompts 20 --offset 20 --resume
 
-**Grippers & End-Effectors**:
-- **robotiq_2f85** - 2-finger parallel gripper (85mm stroke)
-- **shadow_hand** - 5-finger dexterous hand (24-DOF)
-- **leap_hand** - Anthropomorphic hand
-- **umi_gripper** - Universal Manipulation Interface gripper
+# Alternative entry point (identical results):
+python -m comparisons.run_all --pipelines all --prompts 100
+```
 
-Each robot folder contains:
-- `scene.xml` - Main MuJoCo model file (referenced by genesis_scene_builder)
-- `*.urdf` / `*.xml` - Robot description files
-- `assets/` - Mesh files, textures
+> **Note:** Both `python -m comparisons.evaluation.harness` and `python -m comparisons.run_all` are valid entry points for running the evaluation. The `run_all` module is a wrapper that calls the harness, so all options and report outputs are identical.
 
-**Full list**: See `mujoco_menagerie/` directory for all 60+ models including humanoids, quadrupeds, mobile robots, and drones.
+### Report Output
 
-### Workcell Components (workcell_components)
+```
+comparisons/logs/
+├── reports/
+│   ├── comparison_report_YYYYMMDD_HHMMSS.md    # Markdown tables (Tables 1–3)
+│   └── raw_summaries_YYYYMMDD_HHMMSS.json      # Full numeric data
+├── langchain_tools/
+│   ├── langchain_tools_*.json                   # Per-iteration structured evidence
+│   └── langchain_tools_*.log                    # Human-readable text log
+└── ours_full/ ...
+```
 
-Custom-built MJCF component library for workcell infrastructure:
+Three tables are generated:
 
-**Containers & Storage**:
-- **carton/** - Cardboard cartons (various sizes for palletizing tasks)
-- **pallet/** - Standard shipping pallets (1200x800mm, 1200x1000mm)
-- **bin/** - Storage bins
+- **Table 1** – Success rate by stage (S1 / S2 / S3 / Avg) for all four pipelines  
+- **Table 2** – Tool hit & miss counts per stage (pipelines with tools only)  
+- **Table 3** – LLM API calls and token usage (total + per-iteration averages)
 
-**Conveyor Systems**:
-- **conveyor/** - Belt conveyors for material handling
+---
 
-**Work Surfaces**:
-- **table/** - Work tables
-- **pedestal/** - Robot mounting pedestals
+## Settings Reference
 
-Each component folder contains:
-- `component_name.xml` - MJCF model file with collision geometry
-- Dimension specifications integrated into XML
+| Variable | Required when | Description |
+|----------|--------------|-------------|
+| `MODEL_PROVIDER` | always | `azure` or `qwen` |
+| `AZURE_OPENAI_API_KEY` | azure | Azure key |
+| `AZURE_OPENAI_ENDPOINT` | azure | Azure endpoint URL |
+| `AZURE_OPENAI_DEPLOYMENT` | azure | Deployment name (default `gpt-4o`) |
+| `QWEN_BASE_MODEL` | qwen | HuggingFace model ID |
+| `QWEN_API_BASE_URL` | qwen | Local vLLM / OpenAI-compat base URL |
+| `QWEN_API_KEY` | qwen | API key (`sk-no-key-required` for local) |
+| `QWEN_TEMPERATURE` | qwen | Sampling temperature |
+| `QWEN_TOP_P` | qwen | Top-p sampling |
+| `QWEN_MAX_TOKENS` | qwen | Max output tokens |
 
-**Usage**: genesis_scene_builder loads these components during Stage 3 scene construction.  
+All Qwen settings are read from environment only (no code defaults).
+
+---
+
+## Key Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| Skills as files, not code | Agent reads SKILL.md and runs scripts via subprocess – no hardcoded tool logic |
+| Progressive disclosure | Only the currently-needed skill is loaded into context, keeping token usage low |
+| Deterministic Stage 2 | Layout solver is a pure Python script; agent cannot hallucinate component positions |
+| Shared validators | All four comparison pipelines validate against identical semantic rules – fair comparison |
+| stdin/stdout JSON protocol | Scripts are language-agnostic and independently testable |
+| Evidence logger | Every API call, tool use, validation result, and timing persisted for full reproducibility |

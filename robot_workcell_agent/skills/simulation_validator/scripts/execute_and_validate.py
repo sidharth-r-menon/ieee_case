@@ -72,9 +72,10 @@ def main():
             sys.exit(1)
 
         # Extract targets
-        pick_pos = np.array(motion_targets.get("pick_target_xyz", [0.65, 0.0, 1.13]))
-        place_pos = np.array(motion_targets.get("place_target_xyz", [0.0, 0.75, 0.46]))
-        z_lift = input_data.get("z_lift", 0.4)
+        # Defaults from genesis_world_pnp_7.py: PICK_Z=0.82+0.20+0.002=1.022, PLACE_Z=0.15+0.20+0.025=0.375
+        pick_pos = np.array(motion_targets.get("pick_target_xyz", [0.65, 0.0, 1.022]))
+        place_pos = np.array(motion_targets.get("place_target_xyz", [0.0, 0.75, 0.375]))
+        z_lift = input_data.get("z_lift", 0.35)  # Z_HOVER from genesis_world_pnp_7.py
 
         # Get robot from Genesis scene (must already be built)
         # Note: This assumes build_scene was called and scene/robot exist in the process

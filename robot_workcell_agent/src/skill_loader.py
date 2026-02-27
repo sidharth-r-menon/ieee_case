@@ -151,7 +151,11 @@ class SkillLoader:
                 # Handle None or any other value
                 other_skills.append(skill)
 
-        lines = ["Available Skills:"]
+        lines = [
+            f"Available Skills (EXACTLY {len(self.skills)} — NO OTHERS EXIST):",
+            "⚠️ There are NO domain-specific skills (no palletizer, assembler, welder, etc).",
+            "⚠️ Do NOT attempt to load any skill not listed here.",
+        ]
         lines.append("")
 
         if stage_1_skills:

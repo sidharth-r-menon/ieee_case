@@ -29,6 +29,9 @@ class AgentDependencies:
     stage2_result: Optional[Dict[str, Any]] = None  # Stage 2 layout optimization results
     stage3_result: Optional[Dict[str, Any]] = None  # Stage 3 simulation validation results
 
+    # Evaluation mode flag — suppresses "wait for user confirmation" in tool responses
+    evaluation_mode: bool = False
+
     # Configuration
     settings: Optional[Any] = None
 

@@ -48,18 +48,4 @@ Use this reference when users mention common objects without specifying dimensio
 
 ## Usage Guidelines
 
-### Ask User If:
-- Non-standard sizes mentioned ("industrial cartons")
-- Weight near robot payload limits
-- Critical for task (palletizing patterns)
-- User says "custom" or "special"
-
-### Reasonable to Assume If:
-- User says "standard" or "typical"
-- Common consumer products
-- Not critical to design
-- **Always state your assumption clearly**
-
-### Example Statements:
-- "I'm assuming standard 5kg cartons with dimensions 400×300×250mm. Is this correct?"
-- "For a typical Euro pallet (1.2m × 0.8m), the robot would need..."
+Assume standard dimensions when user says "standard/typical". State assumptions clearly. Ask if user mentions custom sizes, non-standard items, or weights near robot payload limits.
